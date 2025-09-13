@@ -18,7 +18,7 @@
             background: linear-gradient(135deg, #1f2732 0%, #0d1117 100%);
         }
         .input-field {
-            @apply w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300;
+            @apply w-full p-3 bg-gray-700 text-blue-300 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300;
         }
         .button {
             @apply w-full p-4 font-bold text-lg rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105;
@@ -103,7 +103,7 @@
                 G'day mate, select a key fishing spot in New Zealand to get the 7-day catch probability forecast.
             </p>
             <div class="space-y-4">
-                <label for="locationSelect" class="block text-sm font-medium text-gray-400">Choose a Location:</label>
+                <label for="locationSelect" class="block text-sm font-medium text-white">Choose a Location:</label>
                 <select id="locationSelect" class="input-field">
                     <option value="-35.95,174.75">Poor Knights Islands</option>
                     <option value="-35.25,174.15">Bay of Islands</option>
@@ -199,7 +199,9 @@
             try {
                 // Fetch marine forecast data for 7 days
                 const marineResponse = await fetch(OPEN_METEO_URL.replace('{lat}', lat).replace('{lon}', lon));
-                if (!marineResponse.ok) throw new Error('Failed to fetch marine data.');
+                if (!marineResponse.ok) {
+                    throw new Error('Failed to fetch marine data. The data provider may be temporarily down. Please try again in a few minutes.');
+                }
                 const marineData = await marineResponse.json();
 
                 // Fetch chlorophyll data for the next 7 days
