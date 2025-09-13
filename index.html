@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ian's NZ Fishing Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1f2732 0%, #0d1117 100%);
+        }
+        .input-field {
+            @apply w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300;
+        }
+        .button {
+            @apply w-full p-4 font-bold text-lg rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105;
+            background: linear-gradient(90deg, #1791d0, #146ba8);
+            color: #ffffff;
+        }
+        .data-card {
+            @apply p-6 bg-gray-800 rounded-2xl shadow-xl border border-gray-700;
+        }
+        .progress-bar-container {
+            background-color: #374151;
+            border-radius: 9999px;
+            height: 1.5rem;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        /* Hero section animation */
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+            background: radial-gradient(circle, rgba(23, 145, 208, 0.1) 0%, rgba(20, 107, 168, 0) 70%);
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(20, 107, 168, 0.1);
+            top: 20%;
+            left: -10%;
+            animation: move-wave 15s infinite ease-in-out alternate;
+        }
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: rgba(23, 145, 208, 0.1);
+            bottom: 15%;
+            right: -10%;
+            animation: move-wave 18s infinite ease-in-out alternate-reverse;
+        }
+        @keyframes move-wave {
+            0% {
+                transform: translateX(0) translateY(0);
+            }
+            100% {
+                transform: translateX(50px) translateY(-50px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 p-4 sm:p-8 flex items-center justify-center min-h-screen relative overflow-hidden">
+    <!-- Animated background element -->
+    <div class="hero-bg"></div>
+
+    <div class="container mx-auto p-6 rounded-3xl shadow-2xl gradient-bg border border-gray-700">
+        <div class="flex flex-col md:flex-row items-center mb-6 relative z-10">
+            <!-- 'W' logo SVG -->
+            <svg class="w-20 h-20 text-blue-500 mb-4 md:mb-0 md:mr-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L6 22H9L10.5 17H13.5L15 22H18L12 2ZM11.25 14L12 11.5L12.75 14H11.25Z" />
+            </svg>
+            <div class="text-center md:text-left">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-400 mb-2">Ian's NZ Fishing Predictor</h1>
+                <p class="text-xl sm:text-2xl font-light text-gray-400">Your go-to tool for finding fishing hotspots in NZ.</p>
+            </div>
+        </div>
+
+        <div class="p-6 bg-gray-800 rounded-2xl shadow-inner border border-gray-700 mb-6 relative z-10">
+            <p class="text-lg text-gray-300 mb-4">
+                G'day mate, select a key fishing spot in New Zealand to get the 7-day catch probability forecast.
+            </p>
+            <div class="space-y-4">
+                <label for="locationSelect" class="block text-sm font-medium text-gray-400">Choose a Location:</label>
+                <select id="locationSelect" class="input-field">
+                    <option value="-35.95,174.75">Poor Knights Islands</option>
+                    <option value="-35.25,174.15">Bay of Islands</option>
+                    <option value="-35.15,174.35">Cape Brett</option>
+                    <option value="-34.96,173.99">Cavallies</option>
+                    <option value="-34.15,172.10">Three Kings Islands</option>
+                </select>
+                <button id="predictButton" class="button">
+                    Get the 7-Day Forecast
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="text-center py-8 hidden relative z-10">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-blue-300 font-semibold">Fetching data and running prediction...</p>
+        </div>
+        
+        <div id="results" class="hidden relative z-10">
+            <h2 class="text-2xl sm:text-3xl font-bold text-blue-300 mb-4">7-Day Forecast</h2>
+            <div id="forecastContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Forecast cards will be dynamically inserted here -->
+            </div>
+        </div>
+        
+        <div id="error" class="text-center py-8 hidden relative z-10">
+            <p class="text-red-500 font-bold text-lg">Error:</p>
+            <p id="errorMessage" class="text-red-300 mt-2"></p>
+        </div>
+    </div>
+    <footer class="mt-8 text-center text-sm text-gray-500 relative z-10">
+        <p>Marine data sourced from <a href="https://open-meteo.com/" target="_blank" class="text-blue-400 hover:underline">Open-Meteo</a> and chlorophyll data from <a href="https://coastwatch.noaa.gov/" target="_blank" class="text-blue-400 hover:underline">NOAA CoastWatch</a>.</p>
+    </footer>
+
+    <script>
+        // API Endpoints
+        const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/marine?latitude={lat}&longitude={lon}&hourly=wave_direction,wave_height,wave_period,wind_speed_10m,sea_surface_temperature&timezone=Pacific%2FAuckland&forecast_days=7';
+        const NOAA_CHLOROPHYLL_URL = 'https://coastwatch.noaa.gov/erddap/griddap/noaacwS3AOLCIchlaDaily.json?chlor_a[({time}):1:({time})][({lat}):1:({lat})][({lon}):1:({lon})]';
+        
+        // --- UI Elements ---
+        const locationSelect = document.getElementById('locationSelect');
+        const predictButton = document.getElementById('predictButton');
+        const loadingDiv = document.getElementById('loading');
+        const resultsDiv = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const forecastContainer = document.getElementById('forecastContainer');
+
+        // --- Simulated ML Model Function ---
+        /**
+         * Simulates a machine learning model's prediction based on environmental factors.
+         * This function mimics the logic a real model would learn from historical data.
+         * @param {number} sst Sea surface temperature in °C.
+         * @param {number} chlorophyll Chlorophyll-a concentration in mg/m³.
+         * @param {number} windSpeed Wind speed in km/h.
+         * @returns {number} Predicted catch probability from 0 to 100.
+         */
+        const predictCatchProbability = (sst, chlorophyll, windSpeed) => {
+            // Function to normalize SST, favoring a threshold of 20°C and above.
+            let sstScore;
+            if (sst >= 20) {
+                sstScore = 1; // Highest score for 20°C and above
+            } else {
+                // Linear decay for temperatures below 20°C, reaching 0 at 10°C
+                sstScore = Math.max(0, (sst - 10) / 10);
+            }
+
+            // Function to normalize chlorophyll, more is better but with diminishing returns
+            const chlorophyllScore = 1 - Math.exp(-0.5 * chlorophyll);
+
+            // Function to normalize wind speed, favoring the 10-20 km/h range
+            const windScore = Math.max(0, 1 - Math.pow((windSpeed - 15) / 20, 2));
+
+            // Combine scores with weights (simulated "learned" weights)
+            const combinedScore = (0.4 * sstScore) + (0.4 * chlorophyllScore) + (0.2 * windScore);
+
+            // Normalize to a 0-100% scale
+            const probability = Math.min(100, Math.max(0, combinedScore * 100));
+            return probability;
+        };
+        
+        // --- Main Prediction Logic ---
+        const handlePrediction = async () => {
+            const [lat, lon] = locationSelect.value.split(',').map(Number);
+            
+            // Show loading state and hide results/errors
+            loadingDiv.classList.remove('hidden');
+            resultsDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            predictButton.disabled = true;
+            forecastContainer.innerHTML = ''; // Clear previous results
+
+            try {
+                // Fetch marine forecast data for 7 days
+                const marineResponse = await fetch(OPEN_METEO_URL.replace('{lat}', lat).replace('{lon}', lon));
+                if (!marineResponse.ok) throw new Error('Failed to fetch marine data.');
+                const marineData = await marineResponse.json();
+
+                // Fetch chlorophyll data for the next 7 days
+                const chlorophyllPromises = [];
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() + i);
+                    const formattedDate = date.toISOString().split('T')[0];
+                    const url = NOAA_CHLOROPHYLL_URL.replace('{time}', formattedDate + 'T12:00:00Z').replace('{lat}', lat).replace('{lon}', lon);
+                    chlorophyllPromises.push(fetch(url).then(res => res.json()));
+                    dates.push(date);
+                }
+                const chlorophyllData = await Promise.all(chlorophyllPromises);
+
+                const forecasts = [];
+                for (let i = 0; i < 7; i++) {
+                    const timeIndex = marineData.hourly.time.findIndex(t => t.startsWith(dates[i].toISOString().split('T')[0]));
+                    if (timeIndex === -1) { continue; }
+
+                    const sst = marineData.hourly.sea_surface_temperature[timeIndex];
+                    const windSpeed = marineData.hourly.wind_speed_10m[timeIndex];
+                    const chlorophyll = chlorophyllData[i].table.rows[0]?.[0];
+
+                    if (sst !== undefined && windSpeed !== undefined && chlorophyll !== undefined) {
+                        const probability = predictCatchProbability(sst, chlorophyll, windSpeed);
+                        forecasts.push({ date: dates[i], probability, sst, windSpeed, chlorophyll });
+                    }
+                }
+                
+                if (forecasts.length > 0) {
+                    displayForecasts(forecasts);
+                } else {
+                    throw new Error('Not enough data to generate a full forecast. Please try again later.');
+                }
+            } catch (err) {
+                showError(`Prediction failed. Error: ${err.message}`);
+                console.error('Prediction error:', err);
+            } finally {
+                loadingDiv.classList.add('hidden');
+                predictButton.disabled = false;
+            }
+        };
+
+        // --- UI Rendering Functions ---
+        const displayForecasts = (forecasts) => {
+            resultsDiv.classList.remove('hidden');
+            forecasts.forEach(forecast => {
+                let color, message, icon;
+                if (forecast.probability >= 80) {
+                    color = 'bg-green-500';
+                    message = 'Excellent conditions!';
+                    icon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-6 6l6 6m6-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>`;
+                } else if (forecast.probability >= 50) {
+                    color = 'bg-yellow-500';
+                    message = 'Good conditions.';
+                    icon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 4.364l-.707.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>`;
+                } else {
+                    color = 'bg-red-500';
+                    message = 'Challenging conditions.';
+                    icon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728M5.636 5.636a9 9 0 010 12.728M5.636 5.636l12.728 12.728m-12.728 0l12.728-12.728M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>`;
+                }
+
+                const dayOfWeek = forecast.date.toLocaleDateString('en-NZ', { weekday: 'long' });
+                const card = `
+                    <div class="data-card flex flex-col items-center text-center">
+                        <div class="flex items-center space-x-2 mb-2">
+                            ${icon}
+                            <h3 class="text-xl font-bold text-blue-400">${dayOfWeek}</h3>
+                        </div>
+                        <p class="text-3xl font-extrabold text-white mb-2">${forecast.probability.toFixed(0)}%</p>
+                        <div class="progress-bar-container w-full mb-2">
+                            <div class="progress-bar ${color}" style="width: ${forecast.probability.toFixed(0)}%;"></div>
+                        </div>
+                        <p class="text-sm font-medium text-gray-400 mb-4">${message}</p>
+                        <div class="space-y-2 text-left w-full text-gray-400">
+                            <p class="text-sm"><span class="font-semibold">SST:</span> ${forecast.sst.toFixed(2)} &deg;C</p>
+                            <p class="text-sm"><span class="font-semibold">Chlorophyll:</span> ${forecast.chlorophyll.toFixed(2)} mg/m&sup3;</p>
+                            <p class="text-sm"><span class="font-semibold">Wind:</span> ${forecast.windSpeed.toFixed(2)} km/h</p>
+                        </div>
+                    </div>
+                `;
+                forecastContainer.innerHTML += card;
+            });
+        };
+
+        const showError = (message) => {
+            errorDiv.classList.remove('hidden');
+            errorMessageDiv.textContent = message;
+            resultsDiv.classList.add('hidden');
+        };
+
+        // Event Listeners
+        predictButton.addEventListener('click', handlePrediction);
+    </script>
+</body>
+</html>
